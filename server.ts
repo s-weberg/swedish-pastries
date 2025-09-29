@@ -62,8 +62,12 @@ app.post('/pastries', (req, res) => {
         price: req.body.price,
     };
 
-    pastries.push(newPastry);
-    res.json({ message: 'Pastry added successfully', pastry: newPastry });
+    const validation = SwedishPastrySchema.safeParse(newPastry);
+    if (!validation.success) {
+        return res.status(400).json({ error: 'Invalid data', details: validation.error });
+    }
+    pastries.push(validation.data);
+    res.json({ message: 'Pastry added successfully', pastry: validation.data });
 });
 
 
@@ -73,15 +77,27 @@ app.put('/pastries/:id', (req, res) => {
     if (!pastry) {
         return res.status(404).json({ message: 'Pastry not found' });
     }
-    pastry.name = req.body.name || pastry.name;
-    pastry.description = req.body.description || pastry.description;
-    pastry.price = req.body.price || pastry.price;
+    const updateData = {
+        id: pastry.id,
+        name: req.body.name || pastry.name,
+        description: req.body.description || pastry.description,
+        price: req.body.price || pastry.price,
+    };
+    const validation = SwedishPastrySchema.safeParse(updateData);
+    if (!validation.success) {
+        return res.status(400).json({ error: 'Invalid update data', details: validation.error.errors });
+    }
+    Object.assign(pastry, validation.data);
     res.json({ message: 'Pastry updated successfully', pastry });
 });
 
 app.delete('/pastries/:id', (req, res) => {
-    const pastryId = parseInt(req.params.id);
-    pastries = pastries.filter ((p) => p.id !== pastryId);
+    const pastryId = parseInt(req.params.id); // Convert the ID from the URL to a number
+    const initialLength = pastries.length;    // Save the current number of pastries
+    pastries = pastries.filter(p => p.id !== pastryId); // Remove the pastry with the matching ID
+    if (pastries.length === initialLength) { // Check if no pastry was removed
+        return res.status(404).json({ message: 'Pastry not found' });
+    }
     res.json({ message: 'Pastry deleted successfully' });
 });
 
