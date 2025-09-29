@@ -85,22 +85,23 @@ app.put('/pastries/:id', (req, res) => {
     };
     const validation = SwedishPastrySchema.safeParse(updateData);
     if (!validation.success) {
-        return res.status(400).json({ error: 'Invalid update data', details: validation.error.errors });
+        return res.status(400).json({ error: 'Invalid update data', details: validation.error });
     }
     Object.assign(pastry, validation.data);
     res.json({ message: 'Pastry updated successfully', pastry });
 });
 
 app.delete('/pastries/:id', (req, res) => {
-    const pastryId = parseInt(req.params.id); // Convert the ID from the URL to a number
-    const initialLength = pastries.length;    // Save the current number of pastries
-    pastries = pastries.filter(p => p.id !== pastryId); // Remove the pastry with the matching ID
-    if (pastries.length === initialLength) { // Check if no pastry was removed
+    const pastryId = parseInt(req.params.id);
+    const index = pastries.findIndex(p => p.id === pastryId);
+
+    if (index === -1) {
         return res.status(404).json({ message: 'Pastry not found' });
     }
+
+    pastries.splice(index, 1);
     res.json({ message: 'Pastry deleted successfully' });
 });
-
 
 
 app.listen(PORT, () => {
